@@ -1,0 +1,98 @@
+---
+title: 'Homework #1: Cantelmo'
+author: "Robert G. Cantelmo"
+date: "February 19, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+
+Section 1: Initial Set Up
+```{r}
+#Load the Democracy dataset into memory as a dataframe. Use the read.csv function, and the  stringsAsFactors = FALSE option. Note that missing values are indicated by "." in the data. Find the option in  read.csv that controls the string used to indicate missing values.
+democracy<- read.csv("democracy.csv", stringsAsFactors = FALSE, na.strings = ".")
+```
+
+Section 2: Initial Data Exploration
+```{r}
+#Report summary statistics (means and medians, at least) for all variables.
+summary(democracy)
+#Create a histogram for political liberties in which each unique value of the variable is in its own bin.
+hist(democracy$POLLIB)
+#Create a histogram for GDP per capita.
+hist(democracy$GDPW)
+#Create a histogram for log GDP per-capita. 
+hist(log10(democracy$GDPW))
+#How is this histogram different than the one for GDP per capita when it was not logged.
+
+```
+
+Section 3: Explore Relationships
+```{r}
+#Create a scatterplot of political liberties against GDP per capita.
+ggplot(democracy, aes(x=GDPW, y=POLLIB))+ geom_point()
+#When there is a lot of overlap in a scatter plot it is useful to jitter the points (randomly move them up and down). Make the previous plot but jitter the points to mitigate the problem of overplotting. (Only jitter the points vertically). You can use geom_jitter in ggplot2 for this.
+ggplot(democracy, aes(x=GDPW, y=POLLIB))+ geom_point()+geom_jitter(width = 0, height=.1)
+#Create a scatterplot of political liberties against log GDP per capita. Jitter the points. How is the relationship different than when GDP per capita was not logged.
+ggplot(democracy, aes(x=log10(GDPW), y=POLLIB))+geom_point()+geom_jitter(width = 0, height=.1)
+#Create a boxplot of GDP per capita for oil producing and non-oil producing nations.
+OilN <- c(democracy$OIL==0)
+ggplot(democracy, aes(x=OilN , y=GDPW))+ geom_boxplot()
+```
+
+Section 4: Transform Data and Analyze
+```{r}
+#Calculate the mean GDP per capita in countries with at least 40 percent Catholics. How does it compare to mean GDP per capita for all countries?
+CATHMEAN <- democracy %>% filter(CATH >= 40) %>% select(GDPW) %>% glimpse()
+summary(CATHMEAN)
+summary(democracy %>% select(GDPW))
+#The mean GDP per capita for 40% Catholic countries is about $1,400 higher than the world mean. 
+
+#Calculate the average GDP per capita in countries with greater than 60% ethnolinguistic fractionalization, less than 60%, and missing ethnolinguistic fractionalization. Hint: you can calculate this with the dplyr verbs: mutate,  group_by and summarise.
+VeryHeterog <- democracy %>% filter(ELF60 > .6) %>% select(GDPW)
+LessHeterog <- democracy %>% filter(ELF60 < .6) %>% select(GDPW)
+mean(democracy$GDPW)
+UnknownHeterog <- filter(democracy, is.na(ELF60))$GDPW %>% mean(na.rm=TRUE)
+summary(VeryHeterog)
+#3591
+summary(LessHeterog)
+#11804
+summary(UnknownHeterog)
+#7767
+
+#What was the median of the average years of education in 1985 for all countries?
+AllED1985 <- democracy %>% filter(YEAR==1985 ) %>% select(EDT)
+summary(AllED1985)
+#5.625
+
+#Which country was (or countries were) closest to the median years of education in 1985 among all countries?
+democracy %>% filter(EDT==5.625 & YEAR==1985 ) %>% glimpse
+#Venezuela
+
+#What was the median of the average years of education in 1985 for democracies?
+ED1985 <- democracy %>% filter(YEAR==1985 & REG==1) %>% select(EDT)
+summary(ED1985)
+#7.805
+
+#Which democracy was (or democracies were) closest to the median years of education in 1985 among all democracies?
+democracy %>% filter(YEAR==1985 & EDT==7.805) %>% glimpse
+#Mauritius
+
+#What were the 25th and 75th percentiles of ethnolinguistic fractionalization for new and old countries?
+FracNew <- democracy %>% filter(NEWC==1) %>% select(ELF60)
+FracOld <- democracy %>% filter(NEWC==0) %>% select(ELF60)
+summary(FracNew)
+# New Countries: 42% @ 25th Percentile & 75% @ 75th Percentile
+summary(FracOld)
+# Old Countries: 6% @ 25th Percentile & 44% @ 75th Percentle
+```
+
+
+
