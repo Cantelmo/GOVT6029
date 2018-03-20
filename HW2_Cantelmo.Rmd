@@ -1,0 +1,172 @@
+---
+title: "HW2_Cantelmo"
+author: "Robert G. Cantelmo"
+date: "March 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+Problem 1
+
+Section 1: Matrix Form
+```{r}
+sprinters<-read.csv("sprinters.csv")
+#In R, Create a matrix X comprised of three columns: a column of ones, a column made of the variable year, and a column made up of the variable women. 
+sprinters$ones <-c (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+X <- matrix(data=c(sprinters$ones, sprinters$year, sprinters$women), nrow = 42, ncol=3, byrow=FALSE)
+#Create a matrix y comprised of a single column, made up of the variable finish.
+Y <- matrix(data=c(sprinters$finish), nrow = 42, ncol=1)
+#Compute the following using R's matrix commands (note that you will need to use the matrix multiplication operator %*%):
+
+b <- (solve(t(X)%*%X)%*%t(X)%*%Y)
+summary(b)
+
+```
+
+Section 2: Fitting a linear model
+
+```{r}
+#Using the function lm, run a regression of finish on year and women.
+#Compare the results the calculation you did in Section 1.
+lm_finish <- lm(finish ~ year + women, data=sprinters)
+summary(lm_finish)
+#The coefficients are the same as the matrix results!
+
+#Make a nice plot summarizing this regression. On a single graph, plot the data and the regression line. Make sure the graph is labeled nicely, so that anyone who does not know your variable names could still read it.
+
+ggplot(sprinters, aes(x=year, y=finish))+geom_point(aes(color=women))+labs(y = "100 Meter Dash - Finish Times", x="Year") + geom_smooth(method="lm", se=FALSE, col="red") 
+
+#Rerun the regression, adding an interaction between women and year.
+lm_finish_interact <- lm(finish ~ year * women, data=sprinters)
+summary(lm_finish_interact)
+
+#Redo the plot with a new fit, one for each level of women.
+ggplot(sprinters, aes(x=year, y=finish, col))+geom_point(aes(color=women))+labs(y = "100 Meter Dash - Finish Times", x="Year") + geom_smooth(method="lm", se=FALSE, col="red") + facet_wrap(~women)
+
+```
+
+
+Section 3: Predicted Values
+```{r}
+#Suppose that an Olympics had been held in 2001. Use the predict function to calculate the expected finishing time for men and for women. Calculate 95% confidence intervals for the predictions.
+MenOLY2001  <-predict(lm_finish, newdata = data_frame(year=2001, women=0), interval = "confidence", level = 0.95)
+summary(MenOLY2001)
+#9.729
+
+WomenOLY2001  <-predict(lm_finish, newdata = data_frame(year=2001, women=1), interval = "confidence", level = 0.95)
+summary(WomenOLY2001)
+#10.82
+
+#The authors of the Nature article were interested in predicting the finishing times for the 2156 Olympics. Use predict to do so, for both men and women, and report 95% confidence intervals for your results.
+
+MenOLY2156  <-predict(lm_finish, newdata = data_frame(year=2156, women=0), interval = "confidence", level = 0.95)
+summary(MenOLY2156)
+#7.775
+
+WomenOLY2156  <-predict(lm_finish, newdata = data_frame(year=2156, women=1), interval = "confidence", level = 0.95)
+summary(WomenOLY2156)
+#8.868
+
+#Do you trust the model's predictions? Is there reason to trust the 2001 prediction more than the 2156 prediction? Is any assumption of the model being abused or overworked to make this prediction?
+
+#I do not trust the model's predictions because it the predicted data assume the trend will be unbroken into the future, without any observations to support a continuation of that relationship. The 2001 prediction, by comparison, comports with our overall understanding of the relationship based on the data available. 
+
+```
+
+Problem 2
+
+```{r}
+library("tidyverse")
+anscombe2 <- anscombe %>%
+    mutate(obs = row_number()) %>%
+    gather(variable_dataset, value, - obs) %>%
+    separate(variable_dataset, c("variable", "dataset"), sep = 1L) %>%
+    spread(variable, value) %>%
+    arrange(dataset, obs)
+
+```
+Section 4: Looking at your data beyond summary statistics
+```{r}
+#For each dataset: calculate the mean and standard deviations of x and y, and correlation between x and y.
+x1 <- filter(anscombe2, dataset==1)
+mean(x1$x)
+mean(x1$y)
+# x-mean: 9
+# y-mean: 7.501
+sd(x1$x)
+sd(x1$y)
+# x-mean: 3.317
+# y-mean: 2.032
+cor(x1$x,x1$y)
+#0.816
+
+x2<- filter(anscombe2, dataset==2)
+mean(x2$x)
+mean(x2$y)
+# x-mean: 9
+# y-mean: 7.501
+sd(x2$x)
+sd(x2$y)
+# x-mean: 3.317
+# y-mean: 2.032
+cor(x2$x,x2$y)
+#0.8162
+
+x3 <- filter(anscombe2, dataset==3)
+mean(x3$x)
+mean(x3$y)
+# x-mean: 9
+# y-mean: 7.5
+sd(x3$x)
+sd(x3$y)
+# x-mean: 3.317
+# y-mean: 2.030
+cor(x3$x,x3$y)
+#0.816
+
+x4<- filter(anscombe2, dataset==4)
+mean(x4$x)
+mean(x4$y)
+# x-mean: 9
+# y-mean: 7.501
+sd(x4$x)
+sd(x4$y)
+# x-mean: 3.316
+# y-mean: 2.031
+cor(x4$x,x4$y)
+#0.817
+
+#Run a linear regression between x and y for each dataset.
+lm_x1 <- lm(y ~ x, data=x1)
+summary(lm_x1)
+lm_x2 <- lm(y ~ x, data=x2)
+summary(lm_x2)
+lm_x3 <- lm(y ~ x, data=x3)
+summary(lm_x3)
+lm_x4 <- lm(y ~ x, data=x4)
+summary(lm_x4)
+
+#How similar do you think that these datasets will look?
+
+#It is difficult to determine how the data will look based on the information provided. The mean, standard deviation, and correlations are quite similar, as are the regression coefficients. Nevertheless, the residuals imply the data will not be arranged in a uniform pattern.
+
+#Create a scatter plot of each dataset and its linear regression fit. Hint: you can do this easily with facet_wrap.
+ggplot(data=anscombe2, aes(x=x, y=y)) + geom_point()+ stat_smooth(method = "lm", se = FALSE)+ facet_wrap(~dataset)
+
+#How do we make sense of these plots?
+#Plots 1&3 are the best approximation of a linear relationship. The first plot essentially has no outliers, while the third has one. Based on the observations in the second plot, it seems the relationship is not linear but curvilinear. Finally, it appears there is no relationship between x and y for Plot 4. 
+
+```
+
+Problem 3
+
+Section 5: Research Project
+```{r}
+#Robert and Tessa to discuss project with Sergio separately this week. 
+```
+
